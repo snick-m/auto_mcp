@@ -6,3 +6,9 @@ These are tasks to be completed to reach the initial version 1.0.0 of the packag
 4. Ensure dependencies are properly defined in package.xml
 5. Tests (?)
 6. Contribution guidelines.
+
+---
+
+1. Wait till Tool field values can start with non alphanumeric char in claude desktop.
+2. Currently float values that are 0.0 get truncated to be only 0 from both the MCP Inspector and Claude desktop.
+    This causes error with creating the messages to be published. A rosbridge solution could work out in this case but is not desirable.

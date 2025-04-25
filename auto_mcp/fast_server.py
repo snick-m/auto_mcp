@@ -12,6 +12,7 @@ sse = app.sse_app
 
 topics = {}
 messages = {}
+publishers = {}
 
 
 @app.resource("automcp://resource")
@@ -31,6 +32,18 @@ async def interface() -> str:
     return "Interface details"
 
 
+@app.tool(name="get_topic_message")
+async def get_message(topic: str) -> str:
+    """
+    Returns the last message received on the specified topic.
+
+    :param topic: The name of the topic.
+    :return: The last message received on the topic.
+    """
+    print(f"Getting message for topic {topic}")
+    return messages.get(topic, "")
+
+
 def run_introspect():
     """
     Introspects the ROS2 topics and creates resources for each topic.
@@ -44,20 +57,23 @@ def run_introspect():
     for t in found_topics:
         try:
             # Store the topic name and its interface in global topics dict
-            topics[t[0]] = t[1][0]
+            topic_name = t[0][
+                1:
+            ]  # Remove leading slash to stay safe with tool parameter standards (Claude desktop for now)
+            topics[topic_name] = t[1][0]
 
             # Using a closure to create a resource for each topic
             # This is necessary to avoid late binding issues in the loop
             # and ensure that the correct topic name is used in the resource.
-            def resource_closure(topic_name):
-                @app.resource(
-                    f"automcp://message/{t[0]}", name=t[0], mime_type="text/plain"
-                )
-                def f():
-                    print(f"Getting message for topic {topic_name}")
-                    return messages.get(topic_name, "")
+            # def resource_closure(topic_name):
+            #     @app.tool(
+            #         f"automcp://message/{t[0]}", name=t[0], mime_type="text/plain"
+            #     )
+            #     def f():
+            #         print(f"Getting message for topic {topic_name}")
+            #         return messages.get(topic_name, "")
 
-            resource_closure(t[0])
+            # resource_closure(t[0])
         except Exception as e:
             print(f"Error: {e}")
 
@@ -95,6 +111,29 @@ async def run_mcp():
     await server.serve()
 
 
+
+
+def dict_to_msg(d: dict, msg_type):
+    msg = msg_type()  # Create empty message instance
+    print(f"Converting dict to message type: {msg_type}")
+    
+    for field in msg.get_fields_and_field_types().keys():
+        if field in d:
+            value = d[field]
+            
+            # Handle nested messages (e.g., `header.stamp`)
+            if isinstance(value, dict):
+                print(f"Nested message found for field: {field}")
+                field_type = msg.get_fields_and_field_types()[field].replace("/", "/msg/")
+                print(f"Field types: {field_type}")
+                nested = dict_to_msg(value, get_interface(field_type))
+                print(f"Setting nested field {field} to value {nested}")
+                setattr(msg, field, nested)
+            else:
+                print(f"Setting field {field} to value {value}")
+                setattr(msg, field, value)
+    return msg
+
 async def run_listener():
     """
     Runs the ROS2 listener node that subscribes to the topics.
@@ -103,12 +142,36 @@ async def run_listener():
     rclpy.init()
     node = Node("automcp_listener")
 
+    @app.tool(name="send_topic_message")
+    async def send_message(topic: str, message: dict) -> str:
+        """
+        Sends a message to the specified topic.
+        Exclude any 0 float values from the message no matter where it is.
+
+        :param topic: The name of the topic.
+        :param message: The message to send.
+        :return: A confirmation message.
+        """
+
+        print(f"Publishers: {publishers}")
+        if topic in publishers:
+            typed_message = get_interface(topics[topic])()
+            typed_message = dict_to_msg(message, get_interface(topics[topic]))
+        
+            publishers[topic].publish(typed_message)
+            return f"Message sent to topic {topic}"
+        else:
+            return f"Topic {topic} not found"
+
     # Create subscriptions for each topic in the global topics dict
     for t, interface in topics.items():
         try:
             node.create_subscription(
                 get_interface(interface), t, msg_callback_factory(t), 10
             )
+            publishers[t] = node.create_publisher(
+                get_interface(interface), t, 10
+            )  # Create a publisher for the topic
         except Exception as e:
             print(f"Error creating subscription for topic {t}: {e}")
 
