@@ -1,7 +1,5 @@
-from math import e
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
 from rosidl_runtime_py.utilities import get_interface
 
 class Introspector(Node):

@@ -12,6 +12,11 @@
   <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
 
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>rosidl_runtime_py</exec_depend>
+  <exec_depend>python3-uvicorn</exec_depend>
+  <!-- <exec_depend>mcp</exec_depend> FIXME: This is commented until MCP is added to rosdep  -->
+
   <export>
     <build_type>ament_python</build_type>
   </export>

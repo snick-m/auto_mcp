@@ -14,22 +14,15 @@ topics = {}
 messages = {}
 publishers = {}
 
-
-@app.resource("automcp://resource")
-async def resource() -> str:
-    return "This is an example resource."
+node: Node = None
 
 
 @app.resource("automcp://topics", name="Topics", mime_type="application/json")
 async def get_topics() -> str:
-    print(f"Topics: {topics}")
+    node.get_logger().debug(
+        f"Returning list of introspected topics - Count: {len(topics)}"
+    )
     return topics
-
-
-@app.resource("automcp://interface", name="Interface", mime_type="text/plain")
-async def interface() -> str:
-    # Implement interface details here
-    return "Interface details"
 
 
 @app.tool(name="get_topic_message")
@@ -40,7 +33,7 @@ async def get_message(topic: str) -> str:
     :param topic: The name of the topic.
     :return: The last message received on the topic.
     """
-    print(f"Getting message for topic {topic}")
+    node.get_logger().debug(f"Returning last received message for topic {topic}")
     return messages.get(topic, "")
 
 
@@ -61,19 +54,6 @@ def run_introspect():
                 1:
             ]  # Remove leading slash to stay safe with tool parameter standards (Claude desktop for now)
             topics[topic_name] = t[1][0]
-
-            # Using a closure to create a resource for each topic
-            # This is necessary to avoid late binding issues in the loop
-            # and ensure that the correct topic name is used in the resource.
-            # def resource_closure(topic_name):
-            #     @app.tool(
-            #         f"automcp://message/{t[0]}", name=t[0], mime_type="text/plain"
-            #     )
-            #     def f():
-            #         print(f"Getting message for topic {topic_name}")
-            #         return messages.get(topic_name, "")
-
-            # resource_closure(t[0])
         except Exception as e:
             print(f"Error: {e}")
 
@@ -111,20 +91,20 @@ async def run_mcp():
     await server.serve()
 
 
-
-
 def dict_to_msg(d: dict, msg_type):
     msg = msg_type()  # Create empty message instance
     print(f"Converting dict to message type: {msg_type}")
-    
+
     for field in msg.get_fields_and_field_types().keys():
         if field in d:
             value = d[field]
-            
+
             # Handle nested messages (e.g., `header.stamp`)
             if isinstance(value, dict):
                 print(f"Nested message found for field: {field}")
-                field_type = msg.get_fields_and_field_types()[field].replace("/", "/msg/")
+                field_type = msg.get_fields_and_field_types()[field].replace(
+                    "/", "/msg/"
+                )
                 print(f"Field types: {field_type}")
                 nested = dict_to_msg(value, get_interface(field_type))
                 print(f"Setting nested field {field} to value {nested}")
@@ -133,6 +113,7 @@ def dict_to_msg(d: dict, msg_type):
                 print(f"Setting field {field} to value {value}")
                 setattr(msg, field, value)
     return msg
+
 
 async def run_listener():
     """
@@ -157,7 +138,7 @@ async def run_listener():
         if topic in publishers:
             typed_message = get_interface(topics[topic])()
             typed_message = dict_to_msg(message, get_interface(topics[topic]))
-        
+
             publishers[topic].publish(typed_message)
             return f"Message sent to topic {topic}"
         else:
@@ -182,6 +163,7 @@ async def run_listener():
 
     rclpy.shutdown()
 
+
 def main():
     """
     Main function to run the MCP server and the ROS2 listener.
@@ -191,6 +173,7 @@ def main():
 
     # Start the MCP server and the listener
     asyncio.run(asyncio.wait([run_mcp(), run_listener()]))
+
 
 if __name__ == "__main__":
     main()
