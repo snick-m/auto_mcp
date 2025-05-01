@@ -15,13 +15,14 @@ setup(
     zip_safe=True,
     maintainer='Mushfiqur Rahman',
     maintainer_email='realmrahman.19@gmail.com',
-    description='TODO: Package description',
+    description='A package to introspect ROS2 topics and create an MCP server with tools interact with those topics.',
     license='BSD-3-Clause',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'hello = auto_mcp.hello:main',
             'introspect = auto_mcp.introspect:main',
+            'server = auto_mcp.fast_server:main',
         ],
     },
 )

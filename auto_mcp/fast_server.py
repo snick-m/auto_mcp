@@ -182,7 +182,15 @@ async def run_listener():
 
     rclpy.shutdown()
 
+def main():
+    """
+    Main function to run the MCP server and the ROS2 listener.
+    """
+    # Run the introspection function to populate topics
+    run_introspect()
+
+    # Start the MCP server and the listener
+    asyncio.run(asyncio.wait([run_mcp(), run_listener()]))
 
 if __name__ == "__main__":
-    run_introspect()
-    asyncio.run(asyncio.wait([run_mcp(), run_listener()]))
+    main()
