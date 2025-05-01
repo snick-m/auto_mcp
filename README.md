@@ -4,6 +4,20 @@ Using introspection tools, the `automcp_listener` node picks up the list of topi
 
 Due to this introspection at start behavior - it should be the last node to run.
 
+## What is it ❔
+Essentially, this package will allow you to give your ROS based robot a big LLM brain with very little work.
+
+It works by creating an MCP server that you can connect with your LLM/Client of choice providing your **robot a brain, and the LLM a body**.
+
+Model Context Protocol or MCP for short is a new protocol for LLMs to interact with various tools. Anthropic, the company behind Claude developed this protocol which has recently seen support from OpenAI as well. Learn more about it from [the official website](https://modelcontextprotocol.io)
+
+Now, this Auto MCP ROS2 package aims to make the process of creating an MCP for your robot effortless. Through introspection, this package can detect all the topics running on a ROS system and provide necessary tools. All you have to do is run its node after everything else, and add the configuration to your preferred client.
+
+## Why is it ❕
+As LLMs get more and more powerful, I figured many more robotics developers will want to build connections between their robots and LLMs. As I had been working on such a concept to run on the Mars rover prototype at TMR, I saw MCP become popular and realized this is perfect for this use case.
+
+But as a firm believer in quality of life improvements, I wanted to make this super easy to use and thus - Auto MCP.
+
 ## Setup 🔧
 The dependencies in the `package.xml` contain rosdep dependencies. However, the MCP SDK for Python is not yet in the rosdep repo. I have a [pull request](https://github.com/ros/rosdistro/pull/45588) open for that.
 
