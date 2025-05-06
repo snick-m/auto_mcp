@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>auto_mcp</name>
-  <version>0.0.0</version>
+  <version>0.1.0</version>
   <description>A package to introspect ROS2 topics and create an MCP server with tools interact with those topics.</description>
   <maintainer email="realmrahman.19@gmail.com">Mushfiqur Rahman</maintainer>
   <license>BSD-3-Clause</license>
@@ -15,7 +15,7 @@
   <exec_depend>rclpy</exec_depend>
   <exec_depend>rosidl_runtime_py</exec_depend>
   <exec_depend>python3-uvicorn</exec_depend>
-  <!-- <exec_depend>mcp</exec_depend> FIXME: This is commented until MCP is added to rosdep  -->
+  <exec_depend>python3-mcp-pip</exec_depend>
 
   <export>
     <build_type>ament_python</build_type>
