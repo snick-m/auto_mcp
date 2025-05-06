@@ -19,6 +19,8 @@ node: Node = None
 
 @app.resource("automcp://topics", name="Topics", mime_type="application/json")
 async def get_topics() -> str:
+    global node
+
     node.get_logger().debug(
         f"Returning list of introspected topics - Count: {len(topics)}"
     )
@@ -33,6 +35,8 @@ async def get_message(topic: str) -> str:
     :param topic: The name of the topic.
     :return: The last message received on the topic.
     """
+    global node
+    
     node.get_logger().debug(f"Returning last received message for topic {topic}")
     return messages.get(topic, "")
 
@@ -41,6 +45,8 @@ def run_introspect():
     """
     Introspects the ROS2 topics and creates resources for each topic.
     """
+    global node
+
     rclpy.init()
     node = Node("automcp_introspect")
     node.get_logger().info("Introspecting ROS2 topics...")
@@ -119,6 +125,7 @@ async def run_listener():
     """
     Runs the ROS2 listener node that subscribes to the topics.
     """
+    global node
 
     rclpy.init()
     node = Node("automcp_listener")
