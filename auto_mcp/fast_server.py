@@ -61,7 +61,7 @@ def run_introspect():
             ]  # Remove leading slash to stay safe with tool parameter standards (Claude desktop for now)
             topics[topic_name] = t[1][0]
         except Exception as e:
-            print(f"Error: {e}")
+            node.get_logger().error(f"Error: {e}")
 
     rclpy.spin_once(node, timeout_sec=0.1)
     rclpy.shutdown()
@@ -99,24 +99,36 @@ async def run_mcp():
 
 def dict_to_msg(d: dict, msg_type):
     msg = msg_type()  # Create empty message instance
-    print(f"Converting dict to message type: {msg_type}")
+    node.get_logger().debug(f"Converting dict to message type: {msg_type}")
+    types = msg.get_fields_and_field_types()
 
-    for field in msg.get_fields_and_field_types().keys():
+    for field in types.keys():
         if field in d:
             value = d[field]
 
             # Handle nested messages (e.g., `header.stamp`)
             if isinstance(value, dict):
-                print(f"Nested message found for field: {field}")
-                field_type = msg.get_fields_and_field_types()[field].replace(
+                node.get_logger().debug(f"Nested message found for field: {field}")
+                field_type = types[field].replace(
                     "/", "/msg/"
                 )
-                print(f"Field types: {field_type}")
+                node.get_logger().debug(f"Field types: {field_type}")
                 nested = dict_to_msg(value, get_interface(field_type))
-                print(f"Setting nested field {field} to value {nested}")
+                node.get_logger().debug(f"Setting nested field {field} to value {nested}")
                 setattr(msg, field, nested)
             else:
-                print(f"Setting field {field} to value {value}")
+                # Parse value to the correct type
+                if types[field] == "float":
+                    value = float(value)
+                elif types[field] == "int":
+                    value = int(value)
+                elif types[field] == "double":
+                    value = float(value)
+                elif types[field] == "bool":
+                    value = bool(value)
+                elif types[field] == "string":
+                    value = str(value)
+                node.get_logger().debug(f"Setting field {field} of type {types[field]} to value {value}")
                 setattr(msg, field, value)
     return msg
 
@@ -128,7 +140,8 @@ async def run_listener():
     global node
 
     rclpy.init()
-    node = Node("automcp_listener")
+    node = Node("auto_mcp")
+    node.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
     @app.tool(name="send_topic_message")
     async def send_message(topic: str, message: dict) -> str:
@@ -141,7 +154,7 @@ async def run_listener():
         :return: A confirmation message.
         """
 
-        print(f"Publishers: {publishers}")
+        node.get_logger().info(f"Publishers: {publishers}")
         if topic in publishers:
             typed_message = get_interface(topics[topic])()
             typed_message = dict_to_msg(message, get_interface(topics[topic]))
@@ -161,7 +174,7 @@ async def run_listener():
                 get_interface(interface), t, 10
             )  # Create a publisher for the topic
         except Exception as e:
-            print(f"Error creating subscription for topic {t}: {e}")
+            node.get_logger().error(f"Error creating subscription for topic {t}: {e}")
 
     # Spin the node to keep it alive and process incoming messages
     while rclpy.ok():
